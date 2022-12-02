@@ -2,6 +2,7 @@ import pandas as pd
 import pymongo
 import datetime
 import os
+import sys
 
 client = pymongo.MongoClient(os.environ['MONGO_URI'])
 db = client['test']
@@ -25,8 +26,7 @@ def parse_datetime(date_str: str):
     else:
         return datetime.datetime.strptime(date_str, '%m/%d/%Y')
 
-def upsert_tokens():
-    df = pd.read_csv("tokens.csv", delimiter='\t')
+def upsert_tokens(df):
     for i, row in df.iterrows():
         start_date = parse_datetime(row['Start Date'])
         name = row['Name']
@@ -46,6 +46,32 @@ def print_tokens():
     for token in tokens.find():
         print(token)
 
+def manual_upsert(token: str, name: str):
+    tokens.update_one({
+        "token": token
+    }, {
+        "$set": {
+            "name": name,
+            "token": token
+        }
+    }, upsert=True)
+
+def help():
+    print("Usage: python3 log.py [file <filename>|upsert <token> <name>|list]")
+
 if __name__ == '__main__':
-    upsert_tokens()
-    print_tokens()
+    if len(sys.argv) == 0:
+        help()
+
+    if sys.argv[1] == 'file':
+        if len(sys.argv) != 3:
+            help()
+        df = pd.read_csv(sys.argv[2], delimiter='\t')
+        upsert_tokens(df)
+    elif sys.argv[1] == 'upsert':
+        print(sys.argv)
+        if len(sys.argv) != 4:
+            help()
+        manual_upsert(sys.argv[2], sys.argv[3])
+    elif sys.argv[1] == 'list':
+        print_tokens()
