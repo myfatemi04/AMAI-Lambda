@@ -18,18 +18,18 @@ interactions = db['interactions']
 tokens = db['tokens']
 
 def find_token(token: str):
-		return tokens.find_one({"token": token})
+	return tokens.find_one({"token": token})
 
 def get_interaction(interaction_id: str):
-		return interactions.find_one({"_id": ObjectId(interaction_id)})
+	return interactions.find_one({"_id": ObjectId(interaction_id)})
 
 def create_interaction(token, prompt):
-		result = interactions.insert_one({
-				"prompt": prompt,
-				"token": token,
-				"events": [],
-		})
-		return str(result.inserted_id)
+	result = interactions.insert_one({
+		"prompt": prompt,
+		"token": token,
+		"events": [],
+	})
+	return str(result.inserted_id)
 
 def log_copy(interaction_id: str, completion: str):
 		interactions.update_one({

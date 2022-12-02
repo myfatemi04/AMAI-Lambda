@@ -2,6 +2,7 @@ import functools
 import json
 import os
 import requests
+import pymongo
 
 def huggingface(model_key, prompt: str, temperature=0.7, max_tokens=120):
 	API_URL = "https://api-inference.huggingface.co/models/" + model_key # "bigscience/bloom"
@@ -17,9 +18,9 @@ def huggingface(model_key, prompt: str, temperature=0.7, max_tokens=120):
 	})
 	return response.json()[0]['generated_text']
 
-def gpt3(prompt: str, temperature=0.7, max_tokens=120) -> str:
+def openai(model_key, prompt: str, temperature=0.7, max_tokens=120) -> str:
 	response = requests.post('https://api.openai.com/v1/completions', json={
-		'model': 'text-davinci-003',
+		'model': model_key,
 		'prompt': prompt,
 		'temperature': temperature,
 		'max_tokens': max_tokens,
@@ -35,9 +36,14 @@ def gpt3(prompt: str, temperature=0.7, max_tokens=120) -> str:
 	return response['choices'][0]['text']
 
 models = {
-	'gpt3': gpt3,
+	'gpt3': openai,
 	'gptj': functools.partial(huggingface, 'EleutherAI/gpt-j-6B'),
 }
+
+client = pymongo.MongoClient(os.environ['MONGO_URI'])
+db = client['test']
+interactions = db['interactions']
+tokens = db['tokens']
 
 def r(code, body):
 	return {
@@ -60,14 +66,19 @@ def lambda_handler(event, context):
 		max_tokens = 120
 		method = 'gpt3'
 
-		if token == '$demo':
-			max_tokens = 25
-		elif token == '$dev:gptj':
-			method = 'gptj'
-		elif token not in os.environ['TOKENS'].split('|'):
-			return r(403, {"error": "Invalid token", "completion": "[invalid token]"})
-			
-		completion = models[method](prompt, temperature=0.7, max_tokens=max_tokens)
+		token_data = tokens.find_one({"token": token})
+		if token_data is None:
+			return r(401, {"error": "Invalid token", "completion": "[invalid token]"})
+
+		max_tokens: int = token_data.get('max_tokens', 120)
+		method: str = token_data.get('method', 'openai:text-davinci-003')
+
+		if method.startswith("hf:"):
+			model = functools.partial(huggingface, method[3:])
+		elif method.startswith("openai:"):
+			model = functools.partial(openai, method[7:])
+
+		completion = model(prompt, temperature=0.7, max_tokens=max_tokens)
 
 		return r(200, {"completion": completion})
 		

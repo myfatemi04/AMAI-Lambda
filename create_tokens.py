@@ -75,3 +75,5 @@ if __name__ == '__main__':
         manual_upsert(sys.argv[2], sys.argv[3])
     elif sys.argv[1] == 'list':
         print_tokens()
+    else:
+        help()
