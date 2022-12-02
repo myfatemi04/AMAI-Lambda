@@ -16,7 +16,10 @@ def huggingface(model_key, prompt: str, temperature=0.7, max_tokens=120):
 			"return_full_text": False,
 		}
 	})
-	return response.json()[0]['generated_text']
+	j = response.json()
+	if type(j) is list:
+		j = j[0]
+	return j['generated_text']
 
 def openai(model_key, prompt: str, temperature=0.7, max_tokens=120) -> str:
 	response = requests.post('https://api.openai.com/v1/completions', json={
@@ -32,6 +35,9 @@ def openai(model_key, prompt: str, temperature=0.7, max_tokens=120) -> str:
 		'Content-Type': 'application/json',
 	})
 	response = response.json()
+
+	if 'choices' not in response:
+		raise ValueError("Invalid response from OpenAI: " + str(response))
 
 	return response['choices'][0]['text']
 
@@ -64,7 +70,6 @@ def lambda_handler(event, context):
 			return r(400, {"error": "Invalid request: Missing 'prompt' or 'token' parameter"})
 
 		max_tokens = 120
-		method = 'gpt3'
 
 		token_data = tokens.find_one({"token": token})
 		if token_data is None:

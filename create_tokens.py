@@ -57,7 +57,17 @@ def manual_upsert(token: str, name: str):
     }, upsert=True)
 
 def help():
-    print("Usage: python3 log.py [file <filename>|upsert <token> <name>|list]")
+    print("Usage: python3 log.py [file <filename>|upsert <token> <name>|list|set-method <token> <method>]")
+
+def set_method(token: str, method: str):
+    tokens.update_one({
+        "token": token
+    }, {
+        "$set": {
+            "method": method,
+            "token": token
+        }
+    }, upsert=True)
 
 if __name__ == '__main__':
     if len(sys.argv) == 0:
@@ -75,5 +85,9 @@ if __name__ == '__main__':
         manual_upsert(sys.argv[2], sys.argv[3])
     elif sys.argv[1] == 'list':
         print_tokens()
+    elif sys.argv[1] == 'set-method':
+        if len(sys.argv) != 4:
+            help()
+        set_method(sys.argv[2], sys.argv[3])
     else:
         help()

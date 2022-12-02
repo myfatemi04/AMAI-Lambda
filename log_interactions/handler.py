@@ -23,9 +23,10 @@ def find_token(token: str):
 def get_interaction(interaction_id: str):
 	return interactions.find_one({"_id": ObjectId(interaction_id)})
 
-def create_interaction(token, prompt):
+def create_interaction(token, method, prompt):
 	result = interactions.insert_one({
 		"prompt": prompt,
+		"method": method,
 		"token": token,
 		"events": [],
 	})
@@ -76,7 +77,8 @@ def lambda_handler(event, context):
 		if token is None:
 			return r(400, {"error": "Invalid request: `token` not provided"})
 		
-		if find_token(token) is None:
+		token_data = find_token(token)
+		if token_data is None:
 			return r(401, {"error": "Invalid token"})
 
 		t = body.get('type')
@@ -84,7 +86,7 @@ def lambda_handler(event, context):
 			prompt = body.get('prompt')
 			if prompt is None:
 				return r(400, {"error": "Invalid request: `prompt` not provided"})
-			return r(200, {"interaction_id": create_interaction(token, prompt)})
+			return r(200, {"interaction_id": create_interaction(token, token_data.get('method', 'openai:text-davinci-003'), prompt)})
 		elif t == 'log_copy':
 			interaction_id, completion = sel(body, ['interaction_id', 'completion'])
 			if interaction_id is None or completion is None:
