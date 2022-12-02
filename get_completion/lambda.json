@@ -1,0 +1,16 @@
+{
+  "name": "generate_completion",
+  "description": "Generate text completions",
+  "region": "us-east-1",
+  "runtime": "python3.8",
+  "handler": "handler.lambda_handler",
+  "role": "arn:aws:iam::763687816313:role/service-role/generate_completion-role-7dzsixkx",
+  "requirements": ["requests"],
+  "ignore": [
+    "/*.zip",
+    "\\.git$",
+    "/.*\\.pyc$"
+  ],
+  "timeout": 30,
+  "memory": 512
+}
