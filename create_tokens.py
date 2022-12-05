@@ -79,10 +79,11 @@ if __name__ == '__main__':
         df = pd.read_csv(sys.argv[2], delimiter='\t')
         upsert_tokens(df)
     elif sys.argv[1] == 'upsert':
-        print(sys.argv)
         if len(sys.argv) != 4:
             help()
         manual_upsert(sys.argv[2], sys.argv[3])
+        print("Verification: Token", sys.argv[2])
+        print(tokens.find_one({"token": sys.argv[2]}))
     elif sys.argv[1] == 'list':
         print_tokens()
     elif sys.argv[1] == 'set-method':
