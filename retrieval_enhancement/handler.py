@@ -63,13 +63,13 @@ def lambda_handler(event, body):
 			return r(401, {"error": "Invalid token"})
 
 		if backend == "bing":
-			return r(200, bing(query))
+			return r(200, {"result": bing(query)})
 		elif backend == "proxy":
-			return r(200, proxy(query))
+			return r(200, {"result": proxy(query)})
 		else:
 			return r(404, {"error": "Backend not found"})
 			
 	except Exception as e:
 		import traceback
-		traceback.print_exc(e)
+		traceback.print_exc()
 		return r(400, {"error": "Invalid request: " + str(e)})
