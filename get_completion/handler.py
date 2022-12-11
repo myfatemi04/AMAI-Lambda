@@ -1,4 +1,3 @@
-import functools
 import json
 from apis import get_api
 from db import tokens

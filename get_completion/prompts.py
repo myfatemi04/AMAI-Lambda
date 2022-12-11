@@ -70,6 +70,7 @@ def get_prompt(prompt_id: str):
 	if prompt is None:
 		return None
 
+	prompt.pop("_id")
 	prompt_type = prompt.pop('type', 'completion')
 	prompt_template = prompt.pop('template')
 	prompt_model_key = prompt.pop('model_key', 'text-davinci-003')
