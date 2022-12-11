@@ -40,6 +40,14 @@ def bing(query):
 	except Exception as ex:
 		raise ex
 
+def proxy(url):
+	try:
+		response = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"})
+		response.raise_for_status()
+		return response.text
+	except Exception as ex:
+		raise ex
+
 def lambda_handler(event, body):
 	try:
 		body = json.loads(event.get("body"))
@@ -54,10 +62,13 @@ def lambda_handler(event, body):
 		if token_data is None:
 			return r(401, {"error": "Invalid token"})
 
-		if backend != "bing":
+		if backend == "bing":
+			return r(200, bing(query))
+		elif backend == "proxy":
+			return r(200, proxy(query))
+		else:
 			return r(404, {"error": "Backend not found"})
-		
-		return r(200, bing(query))
+			
 	except Exception as e:
 		import traceback
 		traceback.print_exc(e)
