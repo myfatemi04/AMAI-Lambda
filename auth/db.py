@@ -3,5 +3,5 @@ import os
 
 client = pymongo.MongoClient(os.environ['MONGO_URI'])
 db = client['test']
-oauth_tokens = db['oauth_tokens']
+access_tokens = db['access_tokens']
 users = db['users']

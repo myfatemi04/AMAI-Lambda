@@ -4,7 +4,7 @@ import json
 import os
 import time
 import bson
-from db import users, oauth_tokens
+from db import users, access_tokens
 
 def r(code, body):
 	print("Response {} with body {}".format(code, json.dumps(body)))
@@ -61,9 +61,10 @@ def google_handler(event, context):
         return r(result.status_code, {"error": result.text, "stage": "get_access_token"})
 
     access_token = result.json()['access_token']
-    expires_in = result.json()['expires_in']
-    refresh_token = result.json()['refresh_token']
-    scope = result.json()['scope']
+    # expires_in = result.json()['expires_in']
+    # # not provided after the first call
+    # refresh_token = result.json().get('refresh_token', None)
+    # scope = result.json()['scope']
 
     user_info_uri = "https://www.googleapis.com/oauth2/v1/userinfo"
     user_info_request = requests.get(user_info_uri, headers={
@@ -85,50 +86,9 @@ def google_handler(event, context):
     }, upsert=True)
 
     user = users.find_one({"email": user_info['email']})
-    user_id = user['_id']
+    insertion = access_tokens.insert_one({"user_id": user['_id'], "valid_until": time.time() + 3600 * 24 * 30})
 
-    result = oauth_tokens.insert_one({
-        "user_id": str(user_id),
-        "provider": "google",
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "valid_until": time.time() + expires_in,
-        "scope": scope,
-    })
-    oauth_token_id = result.inserted_id
-    
-    return r(200, {"access_token": str(oauth_token_id)})
-
-def refresh_google_token(token):
-    token_uri = "https://oauth2.googleapis.com/token"
-    client_id = os.environ['GOOGLE_CLIENT_ID']
-    client_secret = os.environ['GOOGLE_CLIENT_SECRET']
-    grant_type = "refresh_token"
-    refresh_token = token['refresh_token']
-
-    result = requests.post(token_uri, data={
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "grant_type": grant_type,
-        "refresh_token": refresh_token
-    })
-    if result.status_code != 200:
-        return r(result.status_code, {"error": result.text})
-
-    access_token = result.json()['access_token']
-    expires_in = result.json()['expires_in']
-    refresh_token = result.json()['refresh_token']
-
-    oauth_tokens.update_one({
-        "_id": bson.ObjectId(token['_id'])
-    }, {
-        "$set": {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "valid_until": time.time() + expires_in,
-        },
-    })
-
+    return r(200, {"access_token": str(insertion.inserted_id)})
 
 def my_info_handler(event, context):
     if 'body' not in event:
@@ -146,20 +106,16 @@ def my_info_handler(event, context):
     if type(access_token) is not str:
         return r(400, {"error": "access_token is not a string"})
     
-    oauth_token = oauth_tokens.find_one({"_id": bson.ObjectId(access_token)})
+    access_token = access_tokens.find_one({"_id": bson.ObjectId(access_token)})
 
-    if oauth_token is None:
-        return r(400, {"error": "access_token is invalid"})
+    if access_token is None:
+        return r(400, {"error": "access_token is not found"})
 
-    if oauth_token['valid_until'] < time.time():
-        # Try to refresh the token
-        try:
-            refresh_google_token(oauth_token)
-        except Exception as e:
-            traceback.print_exc()
-            return r(400, {"error": "Could not refresh token"})
+    if access_token['valid_until'] < time.time():
+        access_tokens.delete_one({"_id": access_token['_id']})
+        return r(400, {"error": "access_token is expired"})
 
-    user = users.find_one({"_id": bson.ObjectId(oauth_token['user_id'])})
+    user = users.find_one({"_id": bson.ObjectId(access_token['user_id'])})
     if user is None:
         return r(400, {"error": "User not found"})
     
