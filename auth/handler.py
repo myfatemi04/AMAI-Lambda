@@ -88,7 +88,7 @@ def google_handler(event, context):
     user_id = user['_id']
 
     result = oauth_tokens.insert_one({
-        "user_id": user_id,
+        "user_id": str(user_id),
         "provider": "google",
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -97,7 +97,7 @@ def google_handler(event, context):
     })
     oauth_token_id = result.inserted_id
     
-    return r(200, {"access_token": oauth_token_id})
+    return r(200, {"access_token": str(oauth_token_id)})
 
 def refresh_google_token(token):
     token_uri = "https://oauth2.googleapis.com/token"
