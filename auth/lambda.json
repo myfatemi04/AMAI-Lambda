@@ -5,7 +5,7 @@
   "runtime": "python3.9",
   "handler": "handler.lambda_handler",
   "role": "arn:aws:iam::763687816313:role/service-role/generate_completion-role-7dzsixkx",
-  "requirements": ["requests"],
+  "requirements": ["requests", "pymongo[srv]"],
   "ignore": [
     "/*.zip",
     "\\.git$",

@@ -1,0 +1,16 @@
+`oauth_tokens`
+{
+	user_id: string,
+	provider: string,
+	access_token: string,
+	refresh_token: string,
+	valid_until: float,
+	scope: string,
+}
+
+`users`
+{
+	email: string,
+	name: string,
+	profile_photo: string,
+}
