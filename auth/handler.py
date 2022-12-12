@@ -32,12 +32,23 @@ def google_handler(event, context):
     if type(code) is not str:
         return r(400, {"error": "Code is not a string"})
     
+    if 'host' not in body:
+        return r(400, {"error": "No host in body"})
+
+    host = body['host']
+    if type(host) is not str:
+        return r(400, {"error": "Host is not a string"})
+    
     token_uri = "https://oauth2.googleapis.com/token"
     code = body['code']
+    host = body['host']
     client_id = os.environ['GOOGLE_CLIENT_ID']
     client_secret = os.environ['GOOGLE_CLIENT_SECRET']
     grant_type = "authorization_code"
-    redirect_uri = "https://augmateai.michaelfatemi.com/google-callback"
+    if host == 'localhost':
+        redirect_uri = 'http://localhost:3000/google-callback'
+    else:
+        redirect_uri = f"https://{host}/google-callback"
 
     result = requests.post(token_uri, data={
         "code": code,
@@ -47,7 +58,7 @@ def google_handler(event, context):
         "redirect_uri": redirect_uri
     })
     if result.status_code != 200:
-        return r(result.status_code, {"error": result.text})
+        return r(result.status_code, {"error": result.text, "stage": "get_access_token"})
 
     access_token = result.json()['access_token']
     expires_in = result.json()['expires_in']
@@ -59,18 +70,18 @@ def google_handler(event, context):
         "Authorization": "Bearer {}".format(access_token)
     })
     if user_info_request.status_code != 200:
-        return r(user_info_request.status_code, {"error": user_info_request.text})
+        return r(user_info_request.status_code, {"error": user_info_request.text, "stage": "get_user_info"})
     
     user_info = user_info_request.json()
-    
-    # Check to see if the user exists
-    # https://cloud.google.com/identity-platform/docs/reference/rest/v1/UserInfo
+
     users.update_one({
         "email": user_info['email'],
     }, {
-        "email": user_info['email'],
-        "name": user_info['displayName'],
-        'profile_photo': user_info['photoUrl'],
+        "$set": {
+            "email": user_info['email'],
+            "name": user_info['name'],
+            'profile_photo': user_info['picture'],
+        },
     }, upsert=True)
 
     user = users.find_one({"email": user_info['email']})
@@ -111,9 +122,11 @@ def refresh_google_token(token):
     oauth_tokens.update_one({
         "_id": bson.ObjectId(token['_id'])
     }, {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "valid_until": time.time() + expires_in,
+        "$set": {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "valid_until": time.time() + expires_in,
+        },
     })
 
 
