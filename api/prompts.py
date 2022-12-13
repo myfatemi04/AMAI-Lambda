@@ -1,11 +1,9 @@
 # Prompt Management
 
-from db import prompts
+from .db import prompts
 import bson
 
-import requests
-import os
-from apis import openai, huggingface
+import api.llms
 
 class CompletionPrompt:
 	def __init__(self, template: str, model_key: str = 'text-davinci-003', **model_args):
@@ -14,15 +12,11 @@ class CompletionPrompt:
 		self.model_args = model_args
 
 	def __call__(self, **kwargs):
-		formatted = self.template.format(**kwargs)
-
-		return gpt3(self.model_key, formatted, **self.model_args)
+		return api.llms.openai(self.model_key, self.template.format(**kwargs), **self.model_args)
 
 class ListPrompt(CompletionPrompt):
 	def __call__(self, **kwargs):
-		completion = super().__call__(**kwargs)
-
-		return extract_list_from_gpt_completion(completion)
+		return extract_list_from_gpt_completion(super().__call__(**kwargs))
 
 def extract_list_from_gpt_completion(completion: str):
 	import re
@@ -47,23 +41,6 @@ def extract_list_from_gpt_completion(completion: str):
 			next_is_result = True
 	
 	return results
-
-def gpt3(model_key, prompt: str, temperature=0.7, max_tokens=120, stop=None) -> str:
-	response = requests.post('https://api.openai.com/v1/completions', json={
-		'model': model_key,
-		'prompt': prompt,
-		'temperature': temperature,
-		'max_tokens': max_tokens,
-		'top_p': 1,
-		'frequency_penalty': 0,
-		'presence_penalty': 0,
-	}, headers={
-		'Authorization': 'Bearer ' + os.environ['OPENAI_API_KEY'],
-		'Content-Type': 'application/json',
-	})
-	response = response.json()
-
-	return response['choices'][0]['text']
 
 def get_prompt(prompt_id: str):
 	prompt = prompts.find_one({'_id': bson.ObjectId(prompt_id)})

@@ -1,0 +1,5 @@
+# Only required for deployment
+
+mypy-boto3-lambda
+lambda-uploader
+boto3-stubs

@@ -1,19 +1,12 @@
-import requests
 import os
-import json
-from db import tokens
 
-def r(code, body):
-	print("Response {} with body {}".format(code, json.dumps(body)))
-	return {
-		'statusCode': code,
-		'body': json.dumps(body),
-		'headers': {
-			'Access-Control-Allow-Origin': '*',
-		}
-	}
+import api.errors
+import requests
+from api.db import retrieval_enhancement_usage
+from api.decorator import lambda_api
 
-def bing(query):
+
+def _bing(query):
 	# Add your Bing Search V7 subscription key and endpoint to your environment variables.
 	subscription_key = os.environ['BING_SEARCH_V7_SUBSCRIPTION_KEY1']
 	endpoint = "https://api.bing.microsoft.com/v7.0/search"
@@ -40,7 +33,7 @@ def bing(query):
 	except Exception as ex:
 		raise ex
 
-def proxy(url):
+def _proxy(url):
 	try:
 		response = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"})
 		response.raise_for_status()
@@ -48,28 +41,27 @@ def proxy(url):
 	except Exception as ex:
 		raise ex
 
-def lambda_handler(event, body):
-	try:
-		body = json.loads(event.get("body"))
-		token = body.get("token")
-		query = body.get("query")
-		backend = body.get("backend")
+@lambda_api("retrieval_enhancement", ["BING_SEARCH_V7_SUBSCRIPTION_KEY1", "MONGO_URI"], require_auth=True)
+def retrieval_enhancement(body, user):
+	query = body.get("query")
+	backend = body.get("backend")
 
-		if token is None or query is None or backend is None:
-			return r(400, {"error": "Invalid request: `token` or `query` or `backend` not provided"})
-		
-		token_data = tokens.find_one({"token": token})
-		if token_data is None:
-			return r(401, {"error": "Invalid token"})
+	if query is None or backend is None:
+		return api.errors.bad_request("missing query or backend")
 
-		if backend == "bing":
-			return r(200, {"result": bing(query)})
-		elif backend == "proxy":
-			return r(200, {"result": proxy(query)})
-		else:
-			return r(404, {"error": "Backend not found"})
-			
-	except Exception as e:
-		import traceback
-		traceback.print_exc()
-		return r(400, {"error": "Invalid request: " + str(e)})
+	result = None
+	if backend == "bing":
+		result = _bing(query)
+	elif backend == "proxy":
+		result = _proxy(query)
+	else:
+		return api.errors.not_found("backend")
+
+	retrieval_enhancement_usage.insert_one({
+		"user_id": user["_id"],
+		"query": query,
+		"backend": backend,
+		"result": result,
+	})
+
+	return 200, {"result": result}
