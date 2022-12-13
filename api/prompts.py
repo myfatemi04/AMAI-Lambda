@@ -6,13 +6,14 @@ import bson
 import api.llms
 
 class CompletionPrompt:
-	def __init__(self, template: str, model_key: str = 'text-davinci-003', **model_args):
+	def __init__(self, template: str, model_key: str = 'text-davinci-003', generation_params = {}):
 		self.template = template
 		self.model_key = model_key
-		self.model_args = model_args
+		self.generation_params = generation_params
 
 	def __call__(self, **kwargs):
-		return api.llms.openai(self.model_key, self.template.format(**kwargs), **self.model_args)
+		print(f"Calling prompt with {kwargs=} and {self.generation_params=}")
+		return api.llms.openai(self.model_key, self.template.format(**kwargs), **self.generation_params)
 
 class ListPrompt(CompletionPrompt):
 	def __call__(self, **kwargs):
@@ -49,10 +50,11 @@ def get_prompt(prompt_id: str):
 
 	prompt.pop("_id")
 	prompt_type = prompt.pop('type', 'completion')
-	prompt_template = prompt.pop('template')
-	prompt_model_key = prompt.pop('model_key', 'text-davinci-003')
+	template = prompt.pop('template')
+	model_key = prompt.pop('model_key', 'text-davinci-003')
+	generation_params = prompt.pop('generation_params', {})
 
 	if prompt_type == 'completion':
-		return CompletionPrompt(prompt_template, prompt_model_key, **prompt)
+		return CompletionPrompt(template, model_key, generation_params)
 	elif prompt_type == 'list':
-		return ListPrompt(prompt_template, prompt_model_key, **prompt)
+		return ListPrompt(template, model_key, generation_params)
