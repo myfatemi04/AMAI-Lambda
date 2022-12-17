@@ -35,15 +35,15 @@ def build_if_necessary():
 
     _build()
 
-def deploy(fn: LambdaAPI):
+def deploy(fn: LambdaAPI, force_deploy=False):
     print(f"### Deploying function `{fn.name}` ###")
     
     deployed_config = lambda_client.get_function_configuration(FunctionName=fn.name)
     deployment_modified = time.mktime(time.strptime(deployed_config["LastModified"], "%Y-%m-%dT%H:%M:%S.%f%z"))
     build_modified = datetime.datetime.utcfromtimestamp(os.path.getmtime("lambda_function.zip")).timestamp()
 
-    print(" * Checking build deploymenet")
-    if build_modified < deployment_modified:
+    print(" * Checking build deployment")
+    if build_modified < deployment_modified and not force_deploy:
         # We don't need to update the code, the function has been "updated" somehow since we last built the package
         print(" - Function has been updated since last build, skipping code update")
     else:
@@ -81,10 +81,4 @@ def deploy(fn: LambdaAPI):
 
 if __name__ == '__main__':
     build_if_necessary()
-    deploy(get_prompts)
-# deploy(retrieval_enhancement)
-# deploy(oauth)
-# deploy(generate_for_prompt)
-# deploy(my_info)
-# deploy(generate_completion)
-
+    deploy(update_prompt, force_deploy=True)
