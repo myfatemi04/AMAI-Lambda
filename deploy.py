@@ -52,10 +52,10 @@ def deploy(fn: LambdaAPI):
         lambda_client.update_function_code(FunctionName=fn.name, ZipFile=zip_content)
 
         print(" - Waiting before applying configuration updates")
-        time.sleep(5)
+        time.sleep(1)
 
     print(" * Checking environment variables")
-    deployed_env = deployed_config["Environment"]["Variables"]
+    deployed_env = deployed_config.get("Environment", {}).get("Variables", {})
     env_mismatch = False
     for variable in fn.environment_variables:
         if os.environ.get(variable) != deployed_env.get(variable):
@@ -67,6 +67,7 @@ def deploy(fn: LambdaAPI):
             variable: os.environ[variable] for variable in fn.environment_variables
         }})
         print(" - Updated environment variables")
+        time.sleep(1)
     else:
         print(" - No environment variable updates needed")
 
@@ -74,12 +75,16 @@ def deploy(fn: LambdaAPI):
     if deployed_config["Handler"] != f"api.handlers.{fn.name}":
         lambda_client.update_function_configuration(FunctionName=fn.name, Handler=f"api.handlers.{fn.name}")
         print(" - Updated handler")
+        time.sleep(1)
     else:
         print(" - No handler updates needed")
 
-build_if_necessary()
+if __name__ == '__main__':
+    build_if_necessary()
+    deploy(get_prompts)
 # deploy(retrieval_enhancement)
 # deploy(oauth)
-deploy(generate_for_prompt)
+# deploy(generate_for_prompt)
 # deploy(my_info)
 # deploy(generate_completion)
+
