@@ -3,3 +3,6 @@ def not_found(object_type):
 
 def missing_from_request(object_type):
     return (400, {"error": f"{object_type} missing from request"})
+
+def unsuccessful_retrieval(message):
+    return (400, {"error": f"unsuccessful retrieval: {message}"})

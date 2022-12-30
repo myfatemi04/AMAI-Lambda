@@ -4,7 +4,8 @@ import api.errors
 import requests
 from api.db import retrieval_enhancement_usage
 from api.decorator import lambda_api
-
+from api.pdftotext import pdftext_from_fileobj
+import io
 
 def _bing(query):
 	# Add your Bing Search V7 subscription key and endpoint to your environment variables.
@@ -34,12 +35,17 @@ def _bing(query):
 		raise ex
 
 def _proxy(url):
-	try:
-		response = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"})
-		response.raise_for_status()
-		return response.text
-	except Exception as ex:
-		raise ex
+	response = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"})
+	response.raise_for_status()
+
+	# check if it's a PDF
+	if response.headers["content-type"].startswith("application/pdf"):
+		print("PDF!")
+		result = {"type": "text-from-pdf", "content": pdftext_from_fileobj(io.BytesIO(response.content))}
+		print("Got result.")
+		return result
+
+	return {"type": "html", "content": response.text}
 
 @lambda_api("retrieval_enhancement", ["BING_SEARCH_V7_SUBSCRIPTION_KEY1", "MONGO_URI"], require_auth=True)
 def retrieval_enhancement(body, user):
@@ -49,11 +55,17 @@ def retrieval_enhancement(body, user):
 	if query is None or backend is None:
 		return api.errors.missing_from_request("missing query or backend")
 
-	result = None
+	result_content = None
 	if backend == "bing":
-		result = _bing(query)
+		result_content = _bing(query)
+		result_type = "search_results"
 	elif backend == "proxy":
-		result = _proxy(query)
+		try:
+			result = _proxy(query)
+			result_content = result['content']
+			result_type = result['type']
+		except Exception as e:
+			return api.errors.unsuccessful_retrieval(str(e))
 	else:
 		return api.errors.not_found("backend")
 
@@ -61,7 +73,10 @@ def retrieval_enhancement(body, user):
 		"user_id": user["_id"],
 		"query": query,
 		"backend": backend,
-		"result": result,
+		"result": {
+			"content": result_content,
+			"type": result_type
+		},
 	})
 
-	return 200, {"result": result}
+	return 200, {"result": {"content": result_content, "type": result_type}}

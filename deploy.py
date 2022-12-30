@@ -23,7 +23,7 @@ def _build():
         pass
 
     print("Building package...")
-    lambda_uploader.package.build_package(".", requires=['requests', 'pymongo[srv]'], zipfile_name='lambda_function.zip')
+    lambda_uploader.package.build_package(".", requires=['requests', 'pymongo[srv]', 'pdfminer.six'], zipfile_name='lambda_function.zip')
 
 def build_if_necessary():
     if os.path.exists('lambda_function.zip'):
@@ -85,4 +85,4 @@ def deploy(fn: LambdaAPI, force_deploy=False):
 
 if __name__ == '__main__':
     build_if_necessary()
-    deploy(generate_for_prompt, force_deploy=True)
+    deploy(retrieval_enhancement, force_deploy=True)
