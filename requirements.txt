@@ -3,7 +3,6 @@
 # For building deployment
 pymongo[srv]
 requests
-tiktoken==0.1.1
 
 # For deployment
 lambda-uploader
