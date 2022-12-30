@@ -85,4 +85,4 @@ def deploy(fn: LambdaAPI, force_deploy=False):
 
 if __name__ == '__main__':
     build_if_necessary()
-    deploy(generate_embedding, force_deploy=True)
+    deploy(generate_for_prompt, force_deploy=True)

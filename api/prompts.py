@@ -5,14 +5,25 @@ import bson
 
 import api.llms
 
+class MissingVariableException(Exception):
+	def __init__(self, variable: str):
+		self.variable = variable
+		super().__init__("Missing variable " + variable)
+
 class CompletionPrompt:
-	def __init__(self, template: str, model_key: str = 'text-davinci-003', generation_params = {}):
+	def __init__(self, template: str, model_key: str = 'text-davinci-003', generation_params = {}, variables = []):
 		self.template = template
 		self.model_key = model_key
 		self.generation_params = generation_params
+		self.variables = variables
 
 	def __call__(self, **kwargs):
 		print(f"Calling prompt with {kwargs=} and {self.generation_params=}")
+
+		for variable in self.variables:
+			if variable not in kwargs:
+				raise MissingVariableException(f"Missing variable {variable} in {kwargs}")
+
 		return api.llms.openai(self.model_key, self.template.format(**kwargs), **self.generation_params)
 
 class ListPrompt(CompletionPrompt):
@@ -52,6 +63,7 @@ def get_prompt(prompt_id: str):
 	prompt_type = prompt.pop('type', 'completion')
 	template = prompt.pop('template')
 	model_key = prompt.pop('model_key', 'text-davinci-003')
+	variables = prompt.pop('variables', {})
 	generation_params = prompt.pop('generation_params', {})
 
 	if prompt_type == 'completion':

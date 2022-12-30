@@ -19,7 +19,11 @@ def generate_for_prompt(body, user):
         return api.errors.missing_from_request("variables must be dict")
 
     user_id = user['_id']
-    completion = prompt(**variables)
+
+    try:
+        completion = prompt(**variables)
+    except api.prompts.MissingVariableException as e:
+        return api.errors.missing_from_request(f"variable {e.variable}")
 
     api.db.prompt_usage.insert_one({
         "user_id": user_id,
