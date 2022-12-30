@@ -69,7 +69,7 @@ def deploy(fn: LambdaAPI, force_deploy=False):
             env_updates[variable_name] = variable_value
 
     if len(env_updates) > 0:
-        lambda_client.update_function_configuration(FunctionName=fn.name, Environment={"Variables": env_updates})
+        lambda_client.update_function_configuration(FunctionName=fn.name, Environment={"Variables": {**deployed_env, **env_updates}})
         print(" - Updated environment variables")
         time.sleep(1)
     else:
@@ -85,4 +85,4 @@ def deploy(fn: LambdaAPI, force_deploy=False):
 
 if __name__ == '__main__':
     build_if_necessary()
-    deploy(create_text_chunks, force_deploy=True)
+    deploy(generate_embedding, force_deploy=True)

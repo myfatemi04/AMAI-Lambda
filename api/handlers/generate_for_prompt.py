@@ -28,6 +28,7 @@ def generate_for_prompt(body, user):
         "prompt_type": prompt.__class__.__name__,
         "variables": variables,
         "completion": completion,
+        "backend": "openai:" + prompt.model_key,
     })
 
     if not completion:
