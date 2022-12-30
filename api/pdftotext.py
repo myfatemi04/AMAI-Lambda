@@ -31,6 +31,5 @@ def pdftext_from_fileobj(in_file):
     interpreter = PDFPageInterpreter(rsrcmgr, device)
     print("Processing pages")
     for page in PDFPage.create_pages(doc):
-        print("Processing page...")
         interpreter.process_page(page)
     return output_string.getvalue()

@@ -1,11 +1,13 @@
+import io
 import os
 
 import api.errors
+import ftfy
 import requests
 from api.db import retrieval_enhancement_usage
 from api.decorator import lambda_api
 from api.pdftotext import pdftext_from_fileobj
-import io
+
 
 def _bing(query):
 	# Add your Bing Search V7 subscription key and endpoint to your environment variables.
@@ -41,9 +43,14 @@ def _proxy(url):
 	# check if it's a PDF
 	if response.headers["content-type"].startswith("application/pdf"):
 		print("PDF!")
-		result = {"type": "text-from-pdf", "content": pdftext_from_fileobj(io.BytesIO(response.content))}
+		type = "text-from-pdf"
+		content = pdftext_from_fileobj(io.BytesIO(response.content))
 		print("Got result.")
-		return result
+	else:
+		type = "html"
+		content = response.text
+
+	content = ftfy.fix_text(content)
 
 	return {"type": "html", "content": response.text}
 

@@ -1,10 +1,11 @@
 import datetime
-import time
-from api.handlers import *
-import boto3
 import os
-from api.decorator import LambdaAPI
+import time
+
+import api.handlers
+import boto3
 import lambda_uploader.package
+from api.decorator import LambdaAPI
 
 lambda_client = boto3.client('lambda')
 
@@ -23,7 +24,7 @@ def _build():
         pass
 
     print("Building package...")
-    lambda_uploader.package.build_package(".", requires=['requests', 'pymongo[srv]', 'pdfminer.six'], zipfile_name='lambda_function.zip')
+    lambda_uploader.package.build_package(".", requires=['requests', 'pymongo[srv]', 'pdfminer.six', 'ftfy'], zipfile_name='lambda_function.zip')
 
 def build_if_necessary():
     if os.path.exists('lambda_function.zip'):
@@ -84,5 +85,17 @@ def deploy(fn: LambdaAPI, force_deploy=False):
         print(" - No handler updates needed")
 
 if __name__ == '__main__':
+    import re
+    import sys
+
+    if len(sys.argv) != 2:
+        print("Usage: python deploy.py <function_name>")
+        sys.exit(1)
+
+    if not re.match(r'^[a-z0-9_]+$', sys.argv[1]):
+        print("Invalid function name. Function names must be lowercase, and can only contain letters, numbers, and underscores.")
+        sys.exit(1)
+
     build_if_necessary()
-    deploy(retrieval_enhancement, force_deploy=True)
+    fn = getattr(api.handlers, sys.argv[1])
+    deploy(fn, force_deploy=True)
