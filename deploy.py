@@ -56,16 +56,20 @@ def deploy(fn: LambdaAPI, force_deploy=False):
 
     print(" * Checking environment variables")
     deployed_env = deployed_config.get("Environment", {}).get("Variables", {})
-    env_mismatch = False
+    env_updates = {}
     for variable in fn.environment_variables:
-        if os.environ.get(variable) != deployed_env.get(variable):
-            print(f" - Environment variable update: ${variable}: {deployed_env.get(variable)} => {os.environ.get(variable)}")
-            env_mismatch = True
+        # allows for custom environment variables
+        if '=' in variable:
+            variable_name, variable_value = variable.split('=', 1)
+        else:
+            variable_name = variable
+            variable_value = os.environ.get(variable)
+        if variable_value != deployed_env.get(variable_name):
+            print(f" - Environment variable update: ${variable_name}: {deployed_env.get(variable_name)} => {variable_value}")
+            env_updates[variable_name] = variable_value
 
-    if env_mismatch:
-        lambda_client.update_function_configuration(FunctionName=fn.name, Environment={"Variables": {
-            variable: os.environ[variable] for variable in fn.environment_variables
-        }})
+    if len(env_updates) > 0:
+        lambda_client.update_function_configuration(FunctionName=fn.name, Environment={"Variables": env_updates})
         print(" - Updated environment variables")
         time.sleep(1)
     else:
@@ -81,4 +85,4 @@ def deploy(fn: LambdaAPI, force_deploy=False):
 
 if __name__ == '__main__':
     build_if_necessary()
-    deploy(update_prompt, force_deploy=True)
+    deploy(create_text_chunks, force_deploy=True)

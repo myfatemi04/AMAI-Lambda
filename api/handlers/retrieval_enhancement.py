@@ -47,7 +47,7 @@ def retrieval_enhancement(body, user):
 	backend = body.get("backend")
 
 	if query is None or backend is None:
-		return api.errors.bad_request("missing query or backend")
+		return api.errors.missing_from_request("missing query or backend")
 
 	result = None
 	if backend == "bing":

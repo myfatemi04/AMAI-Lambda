@@ -7,11 +7,11 @@ import bson
 def update_prompt(body, user):
     prompt_id = body.get("prompt_id", None)
     if prompt_id is None:
-        return api.errors.bad_request("missing prompt_id")
+        return api.errors.missing_from_request("missing prompt_id")
     
     new_name = body.get("new_name", None)
     if new_name is None:
-        return api.errors.bad_request("missing new_name")
+        return api.errors.missing_from_request("missing new_name")
 
     result = api.db.prompts.update_one({"_id": bson.ObjectId(prompt_id), "user_id": user["_id"]}, {"$set": {"name": new_name}})
     if result.matched_count == 0:

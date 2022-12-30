@@ -9,14 +9,14 @@ def generate_for_prompt(body, user):
     variables = body.get("variables")
 
     if prompt_id is None or variables is None:
-        return api.errors.bad_request("missing prompt_id, token, or variables")
+        return api.errors.missing_from_request("missing prompt_id, token, or variables")
 
     prompt = api.prompts.get_prompt(prompt_id)
     if prompt is None:
         return api.errors.not_found("prompt_id")
 
     if type(variables) is not dict:
-        return api.errors.bad_request("variables must be dict")
+        return api.errors.missing_from_request("variables must be dict")
 
     user_id = user['_id']
     completion = prompt(**variables)

@@ -1,5 +1,13 @@
-# Only required for deployment
+# Use the amai-lambda environment for this.
 
-mypy-boto3-lambda
+# For building deployment
+pymongo[srv]
+requests
+tiktoken==0.1.1
+
+# For deployment
 lambda-uploader
+
+# Optional (type annotations for VS Code)
 boto3-stubs
+mypy-boto3-lambda
