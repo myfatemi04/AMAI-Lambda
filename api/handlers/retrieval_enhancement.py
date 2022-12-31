@@ -9,6 +9,7 @@ from api.db import retrieval_enhancement_usage
 from api.decorator import lambda_api
 from api.pdftotext import pdftext_from_fileobj
 from api.savetos3 import save_to_s3
+from youtube_transcript_api import YouTubeTranscriptApi
 
 
 def _bing(query):
@@ -58,6 +59,14 @@ def _proxy(url):
 
 	return {"type": type, "content": content}
 
+def get_youtube_transcript(url: str):
+	import re
+
+	match = re.match('^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/)|(?:(?:watch)?\?v(?:i)?=|&v(?:i)?=))([^#&?]*).*', url)
+	if match:
+		video_id = match.group(1)
+		return YouTubeTranscriptApi.get_transcript(video_id, languages=["en"])
+
 @lambda_api("retrieval_enhancement", ["BING_SEARCH_V7_SUBSCRIPTION_KEY1", "MONGO_URI"], require_auth=True)
 def retrieval_enhancement(body, user):
 	query: str = body.get("query")
@@ -81,6 +90,12 @@ def retrieval_enhancement(body, user):
 			
 			result_type = 's3'
 			result_content = filename
+		except Exception as e:
+			return api.errors.unsuccessful_retrieval(str(e))
+	elif backend == "youtube":
+		try:
+			result_content = get_youtube_transcript(query)
+			result_type = "youtube_transcript"
 		except Exception as e:
 			return api.errors.unsuccessful_retrieval(str(e))
 	else:
