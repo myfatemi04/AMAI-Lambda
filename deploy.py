@@ -2,7 +2,6 @@ import datetime
 import os
 import time
 
-import api.handlers
 import boto3
 import lambda_uploader.package
 from api.decorator import LambdaAPI
@@ -14,7 +13,9 @@ def _latest_mtime(folder):
     mtime = 0
     for root, dirs, files in os.walk(folder):
         for file in files:
-            mtime = max(mtime, os.path.getmtime(os.path.join(root, file)))
+            path = os.path.join(root, file)
+            if '__pycache__' not in path:
+                mtime = max(mtime, os.path.getmtime(path))
     return mtime
 
 def _build():
@@ -77,8 +78,9 @@ def deploy(fn: LambdaAPI, force_deploy=False):
         print(" - No environment variable updates needed")
 
     print(" * Checking handler")
-    if deployed_config["Handler"] != f"api.handlers.{fn.name}.{fn.name}":
-        lambda_client.update_function_configuration(FunctionName=fn.name, Handler=f"api.handlers.{fn.name}")
+    expected_handler = f"api.handlers.{fn.name}.{fn.name}"
+    if deployed_config["Handler"] != expected_handler:
+        lambda_client.update_function_configuration(FunctionName=fn.name, Handler=expected_handler)
         print(" - Updated handler")
         time.sleep(1)
     else:
