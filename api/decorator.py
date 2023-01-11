@@ -1,8 +1,6 @@
 import json
 import time
 import traceback
-import api.db
-import bson
 
 def create_response(status_code, body):
     return {
@@ -25,6 +23,9 @@ class LambdaAPI:
             print("WARNING: MONGO_URI is required for authentication, but was not specified in environment_variables. Adding it automatically.")
 
     def __call__(self, event, context):
+        import api.db
+        import bson
+
         try:
             try:
                 body = json.loads(event['body'])
