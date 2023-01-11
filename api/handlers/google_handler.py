@@ -29,6 +29,8 @@ def google_handler(body):
     if host == 'localhost':
         redirect_uri = 'http://localhost:3000/google-callback'
     else:
+        if host not in {'augmateai.michaelfatemi.com', 'augmateai-staging.michaelfatemi.com'}:
+            return (400, {"error": "Invalid host"})
         redirect_uri = f"https://{host}/google-callback"
 
     result = requests.post(token_uri, data={
