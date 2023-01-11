@@ -25,7 +25,14 @@ def _build():
         pass
 
     print("Building package...")
-    lambda_uploader.package.build_package(".", requires=['requests', 'pymongo[srv]', 'pdfminer.six', 'ftfy', 'youtube-transcript-api'], zipfile_name='lambda_function.zip')
+    lambda_uploader.package.build_package(".", requires=[
+        'requests',
+        'pymongo[srv]',
+        'pdfminer.six',
+        'ftfy',
+        'youtube-transcript-api',
+        'stripe',
+    ], zipfile_name='lambda_function.zip')
 
 def build_if_necessary():
     if os.path.exists('lambda_function.zip'):

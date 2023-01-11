@@ -1,3 +1,4 @@
+import time
 from api.decorator import lambda_api
 import api.db
 import api.prompts
@@ -33,6 +34,7 @@ def generate_for_prompt(body, user):
         "variables": variables,
         "completion": completion,
         "backend": "openai:" + prompt.model_key,
+        "timestamp": time.time(),
     })
 
     if not completion:

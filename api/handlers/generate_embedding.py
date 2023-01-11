@@ -1,7 +1,10 @@
-from api.decorator import lambda_api
-from api.llms import openai_embeddings
-from api.errors import missing_from_request
+import time
+
 from api.db import embeddings_usage
+from api.decorator import lambda_api
+from api.errors import missing_from_request
+from api.llms import openai_embeddings
+
 
 @lambda_api("generate_embedding", ["MONGO_URI", "OPENAI_API_KEY"], require_auth=True)
 def generate_embedding(body, user):
@@ -16,7 +19,8 @@ def generate_embedding(body, user):
         "user_id": user["_id"],
         "prompt": prompt,
         "embedding": embedding,
-        "backend": "openai:text-embedding-ada-002"
+        "backend": "openai:text-embedding-ada-002",
+        "timestamp": time.time(),
     })
 
     return (200, {"embedding": embedding})

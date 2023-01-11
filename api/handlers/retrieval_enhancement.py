@@ -1,6 +1,7 @@
 import hashlib
 import io
 import os
+import time
 
 import api.errors
 import ftfy
@@ -109,6 +110,7 @@ def retrieval_enhancement(body, user):
 			"content": result_content,
 			"type": result_type
 		},
+        "timestamp": time.time(),
 	})
 
 	return 200, {"result": {"content": result_content, "type": result_type}}
