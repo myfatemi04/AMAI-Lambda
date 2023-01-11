@@ -23,9 +23,6 @@ class LambdaAPI:
             print("WARNING: MONGO_URI is required for authentication, but was not specified in environment_variables. Adding it automatically.")
 
     def __call__(self, event, context):
-        import api.db
-        import bson
-
         try:
             try:
                 body = json.loads(event['body'])
@@ -33,7 +30,9 @@ class LambdaAPI:
                 return create_response(400, {"error": "Could not parse body as JSON"})
 
             if self.require_auth:
-                print(event['headers'])
+                import api.db
+                import bson
+                
                 if 'authorization' not in event['headers']:
                     return create_response(401, {"error": "No Authorization header"})
                 token = event['headers']['authorization'][len("Bearer "):]

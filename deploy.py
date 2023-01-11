@@ -77,7 +77,7 @@ def deploy(fn: LambdaAPI, force_deploy=False):
         print(" - No environment variable updates needed")
 
     print(" * Checking handler")
-    if deployed_config["Handler"] != f"api.handlers.{fn.name}":
+    if deployed_config["Handler"] != f"api.handlers.{fn.name}.{fn.name}":
         lambda_client.update_function_configuration(FunctionName=fn.name, Handler=f"api.handlers.{fn.name}")
         print(" - Updated handler")
         time.sleep(1)
@@ -87,6 +87,7 @@ def deploy(fn: LambdaAPI, force_deploy=False):
 if __name__ == '__main__':
     import re
     import sys
+    import importlib
 
     if len(sys.argv) != 2:
         print("Usage: python deploy.py <function_name>")
@@ -97,5 +98,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     build_if_necessary()
-    fn = getattr(api.handlers, sys.argv[1])
+
+    fn = getattr(importlib.import_module('api.handlers.' + sys.argv[1]), sys.argv[1])
+    
     deploy(fn, force_deploy=True)
