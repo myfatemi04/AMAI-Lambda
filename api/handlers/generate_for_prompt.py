@@ -13,7 +13,7 @@ def generate_for_prompt(body, user):
     if prompt_id is None or variables is None:
         return api.errors.missing_from_request("missing prompt_id, token, or variables")
 
-    prompt = api.prompts.get_prompt(prompt_id)
+    prompt, pricing = api.prompts.get_prompt(prompt_id)
     if prompt is None:
         return api.errors.not_found("prompt_id")
 
@@ -27,8 +27,9 @@ def generate_for_prompt(body, user):
     except api.prompts.MissingVariableException as e:
         return api.errors.missing_from_request(f"variable {e.variable}")
 
-    # add completion tokens to text generation usage
-    api.stripe_utils.add_usage(user['email'], user['name'], completion['completion_tokens'])
+    # add completion tokens to text generation usage, if the prompt is not free
+    if pricing.get('is_free', False) == False:
+        api.stripe_utils.add_usage(user['email'], user['name'], completion['completion_tokens'])
 
     api.db.prompt_usage.insert_one({
         "user_id": user_id,
@@ -39,6 +40,7 @@ def generate_for_prompt(body, user):
         "completion": completion['text'],
         "completion_prompt_tokens": completion['prompt_tokens'],
         "completion_completion_tokens": completion['completion_tokens'],
+        "pricing": pricing,
         "backend": "openai:" + prompt.model_key,
         "timestamp": time.time(),
     })

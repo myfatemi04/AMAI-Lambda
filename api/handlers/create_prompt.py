@@ -28,10 +28,13 @@ def create_prompt(template: str, variables: list, user_id: bson.ObjectId, genera
     return result.inserted_id
 
 def _create_prompts():
-    create_prompt(
-        "{context}",
-        [{"name": "context"}],
-        bson.ObjectId("63bf39f45117bd92a289699f"),
-        {"max_tokens": 256},
-        "default_generator"
+    result = create_prompt(
+        template='''Text:\n"""\n{context}\n"""\n\nInstructions:\n{instructions}\n\nAnswer:\n''',
+        variables=[{"name": "context"}, {"name": "instructions"}],
+        user_id=bson.ObjectId("63bf39f45117bd92a289699f"),
+        generation_params={"max_tokens": 256},
+        name="default_generator"
     )
+    print(result)
+
+# _create_prompts()

@@ -57,7 +57,7 @@ def extract_list_from_gpt_completion(completion: str):
 def get_prompt(prompt_id: str):
 	prompt = prompts.find_one({'_id': bson.ObjectId(prompt_id)})
 	if prompt is None:
-		return None
+		return None, None
 
 	prompt.pop("_id")
 	prompt_type = prompt.pop('type', 'completion')
@@ -65,8 +65,9 @@ def get_prompt(prompt_id: str):
 	model_key = prompt.pop('model_key', 'text-davinci-003')
 	variables = prompt.pop('variables', {})
 	generation_params = prompt.pop('generation_params', {})
+	pricing = prompt.pop('pricing', {})
 
 	if prompt_type == 'completion':
-		return CompletionPrompt(template, model_key, generation_params)
+		return (CompletionPrompt(template, model_key, generation_params), pricing)
 	elif prompt_type == 'list':
-		return ListPrompt(template, model_key, generation_params)
+		return (ListPrompt(template, model_key, generation_params), pricing)
