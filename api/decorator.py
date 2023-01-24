@@ -26,7 +26,7 @@ class LambdaAPI:
     def __call__(self, event, context):
         try:
             if self.use_raw:
-                return self.fn(event)
+                return create_response(*self.fn(event))
 
             try:
                 body = json.loads(event['body'])
