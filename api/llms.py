@@ -46,7 +46,15 @@ def openai(model_key, prompt: str, temperature=0.7, max_tokens=120, stop=None) -
 	if 'choices' not in response:
 		raise ValueError("Invalid response from OpenAI: " + str(response))
 
-	return response['choices'][0]['text']
+	text = response['choices'][0]['text']
+	prompt_tokens = response['usage']['prompt_tokens']
+	completion_tokens = response['usage']['completion_tokens']
+
+	return {
+		"text": text,
+		"prompt_tokens": prompt_tokens,
+		"completion_tokens": completion_tokens,
+	}
 
 def openai_embeddings(text: str) -> list[float]:
 	body = {

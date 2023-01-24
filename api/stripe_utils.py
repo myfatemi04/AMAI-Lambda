@@ -54,11 +54,11 @@ def add_usage_record_to_subscription_item(subscription_item: stripe.Subscription
     )
     return usage_record
 
-def add_usage(email: str, name: str, word_count: int):
+def add_usage(email: str, name: str, token_count: int):
     customer = obtain_stripe_customer(email, name)
     subscription = obtain_augmate_subscription(customer)
     subscription_item = obtain_subscription_item(subscription, text_generation_product_id)
-    usage_record = add_usage_record_to_subscription_item(subscription_item, word_count)
+    usage_record = add_usage_record_to_subscription_item(subscription_item, token_count)
     return usage_record
 
 def get_usage(email: str, name: str):
