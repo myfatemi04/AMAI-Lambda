@@ -15,19 +15,38 @@ def obtain_stripe_customer(email: str, name: str):
     else:
         return customers.data[0]
 
-def obtain_augmate_subscription(customer: stripe.Customer):
-    subscriptions = stripe.Subscription.list(customer=customer.id)
-    if len(subscriptions) == 0:
+def create_augmate_subscription_if_not_existing(customer: stripe.Customer):
+    current_subscription = get_augmate_subscription(customer)
+
+    if not current_subscription:
         subscription = stripe.Subscription.create(
             customer=customer.id,
             items=[
                 {"price": get_price(text_generation_product_id).id}
             ]
         )
-    else:
-        subscription = subscriptions.data[0]
 
     return subscription
+
+def cancel_augmate_subscription(customer: stripe.Customer):
+    subscription = get_augmate_subscription(customer)
+    if subscription is None:
+        return None
+
+    subscription = stripe.Subscription.modify(
+        subscription.id,
+        cancel_at_period_end=True,
+    )
+
+    return subscription
+
+def get_augmate_subscription(customer: stripe.Customer):
+    subscriptions = stripe.Subscription.list(customer=customer.id)
+
+    if len(subscriptions) == 0:
+        return None
+    
+    return subscriptions.data[0]
 
 def get_price(product_id: str):
     prices = stripe.Price.list(product=product_id, active=True)
@@ -56,14 +75,14 @@ def add_usage_record_to_subscription_item(subscription_item: stripe.Subscription
 
 def add_usage(email: str, name: str, token_count: int):
     customer = obtain_stripe_customer(email, name)
-    subscription = obtain_augmate_subscription(customer)
+    subscription = get_augmate_subscription(customer)
     subscription_item = obtain_subscription_item(subscription, text_generation_product_id)
     usage_record = add_usage_record_to_subscription_item(subscription_item, token_count)
     return usage_record
 
 def get_usage(email: str, name: str):
     customer = obtain_stripe_customer(email, name)
-    subscription = obtain_augmate_subscription(customer)
+    subscription = get_augmate_subscription(customer)
     subscription_item = obtain_subscription_item(subscription, text_generation_product_id)
     summaries = stripe.SubscriptionItem.list_usage_record_summaries(subscription_item.id)
     most_recent_summary = summaries.data[0]
