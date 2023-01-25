@@ -68,3 +68,24 @@ def get_usage(email: str, name: str):
     summaries = stripe.SubscriptionItem.list_usage_record_summaries(subscription_item.id)
     most_recent_summary = summaries.data[0]
     return most_recent_summary.total_usage
+
+# Customer events:
+# https://stripe.com/docs/api/events/types
+# Subscription events:
+# https://stripe.com/docs/api/subscriptions/object
+
+def handle_subscription_updated(subscription: stripe.Subscription):
+    import api.db
+
+    customer_id = subscription['customer']
+    customer_email = stripe.Customer.retrieve(customer_id).email
+
+    api.db.users.update_one({"email": customer_email}, {"$set": {"subscription": subscription}})
+
+def handle_subscription_deleted(subscription: stripe.Subscription):
+    import api.db
+
+    customer_id = subscription['customer']
+    customer_email = stripe.Customer.retrieve(customer_id).email
+
+    api.db.users.update_one({"email": customer_email}, {"$set": {"subscription": None}})

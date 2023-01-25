@@ -1,14 +1,22 @@
-from api.decorator import lambda_api
+import os
+import time
+import traceback
+
+import api.db
 import api.errors
 import api.stripe_utils
 import stripe
 import stripe.error
-import os
-import traceback
+from api.decorator import lambda_api
 
-@lambda_api('stripe_webhook', environment_variables=['STRIPE_API_KEY', 'STRIPE_WEBHOOK_SECRET'], require_auth=False, use_raw=True)
+# Webhooks intro:
+# https://stripe.com/docs/webhooks
+
+# Events overview:
+# https://stripe.com/docs/api/events/types
+
+@lambda_api('stripe_webhook', environment_variables=['STRIPE_API_KEY', 'STRIPE_WEBHOOK_SECRET', 'MONGO_URI'], require_auth=False, use_raw=True)
 def stripe_webhook(request):
-    # print(request)
     payload = request['body']
     sig_header = request['headers']['stripe-signature']
     
@@ -16,12 +24,20 @@ def stripe_webhook(request):
         event = stripe.Webhook.construct_event(
             payload, sig_header, os.environ['STRIPE_WEBHOOK_SECRET']
         )
-        print("EVENT")
-        print(event)
-    except ValueError as e:
+        api.db.stripe_events.insert_one({"object": event.data.object.to_dict_recursive(), "type": event.type, "timestamp": time.time()})
+
+        if event.type == 'customer.subscription.updated':
+            api.stripe_utils.handle_subscription_updated(event.data.object)
+        elif event.type == 'customer.subscription.deleted':
+            api.stripe_utils.handle_subscription_deleted(event.data.object)
+        else:
+            print("Unhandled event type: {}".format(event.type))
+
+    except ValueError:
         traceback.print_exc()
         return (400, {"error": "invalid payload"})
-    except stripe.error.SignatureVerificationError as e:
+
+    except stripe.error.SignatureVerificationError:
         traceback.print_exc()
         return (400, {"error": "invalid signature"})
 

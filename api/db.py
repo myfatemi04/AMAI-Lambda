@@ -11,6 +11,7 @@ prompt_usage = db['prompt_usage']
 retrieval_enhancement_usage = db['retrieval_enhancement_usage']
 embeddings_usage = db['embeddings_usage']
 text_creations = db['text_creations']
+stripe_events = db['stripe_events']
 
 # OLD.
 tokens = db['tokens']
